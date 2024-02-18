@@ -136,6 +136,12 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(products[0].id, original_id)
         self.assertEqual(products[0].description, "testing")
 
+        with self.assertRaises(Exception) as context:
+            product = ProductFactory()
+            product.id = None
+            product.update()
+        self.assertTrue("Update called with empty ID field" in str(context.exception))
+
     def test_delete_a_product(self):
         """It should Delete a Product"""
         product = ProductFactory()
@@ -192,3 +198,49 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(found.count(), count)
         for product in found:
             self.assertEqual(product.category, category)
+
+    def test_exceptions(self):
+        """It should raise DataValidationError"""
+        with self.assertRaises(Exception) as context:
+            product = ProductFactory()
+            data = {
+                "name": "Test",
+                "description": "Test",
+                "price": 1.00,
+                "available": "Test"
+            }
+            product.deserialize(data)
+        self.assertTrue("Invalid type for boolean [available]: <class 'str'>" in str(context.exception))
+
+        with self.assertRaises(Exception) as context:
+            product = ProductFactory()
+            data = {
+                "name": "Test",
+                "description": "Test",
+                "price": 1.00,
+                "available": True,
+                "category": "Error"
+            }
+            product.deserialize(data)
+        print(str(context.exception))
+        self.assertTrue("Invalid attribute: Error" in str(context.exception))
+
+        with self.assertRaises(Exception) as context:
+            product = ProductFactory()
+            data = {
+                "name": "Test",
+                "description": "Test",
+                "price": 1.00,
+                "available": True,
+            }
+            product.deserialize(data)
+        print(str(context.exception))
+        self.assertTrue("Invalid product: missing category" in str(context.exception))
+
+        with self.assertRaises(Exception) as context:
+            product = ProductFactory()
+            data = []
+            product.deserialize(data)
+        print(str(context.exception))
+        self.assertTrue("Invalid product: body of request contained bad or no data list indices must \
+        be integers or slices, not str" in str(context.exception))
